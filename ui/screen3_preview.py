@@ -18,8 +18,9 @@ from database.db import get_audit, get_findings_for_audit, update_audit, log_aud
 def render_screen3():
     st.markdown("""
     <div class="hero-banner">
-        <h1>📑 Report Preview & Approval</h1>
-        <p>Verify report completeness against the official Regis template format, perform compliance sign-off, and export final PDF and Word documents.</p>
+        <div class="hero-badge">Step 3 • Report Verification & Final Export</div>
+        <h1>Report Preview & Compliance Sign-off</h1>
+        <p>Review the populated Regis template tables, execute quality assurance checks, and generate the official PDF & Word audit report.</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -34,52 +35,64 @@ def render_screen3():
     audit = get_audit(audit_id)
     findings = st.session_state.get("current_findings") or get_findings_for_audit(audit_id)
 
-    # 1. Validation Checklist (FR-09)
+    # 1. Validation Engine Checklist (FR-09)
     val_result = validate_audit_report(audit, findings)
     
-    st.markdown("### 📋 Validation Status")
     if val_result["is_valid"]:
-        st.success("✅ All required fields and findings passed validation checks!")
+        st.markdown("""
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 14px 20px; margin-bottom: 24px; display: flex; align-items: center; gap: 12px;">
+            <div style="font-size: 1.4rem;">✅</div>
+            <div>
+                <strong style="color: #15803d; font-size: 1.02rem;">Validation Passed: Report Ready for Issuance</strong>
+                <p style="margin: 2px 0 0 0; color: #475569; font-size: 0.88rem;">All required Regis report metadata, ratings, corrective actions, and evidence photos are fully verified.</p>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
     else:
-        st.error(f"❌ Found {val_result['error_count']} required field error(s). Please review and correct them before final sign-off.")
+        st.markdown(f"""
+        <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 14px 20px; margin-bottom: 24px;">
+            <strong style="color: #b91c1c; font-size: 1.02rem;">❌ {val_result['error_count']} Required Field Error(s) Found</strong>
+            <p style="margin: 4px 0 0 0; color: #475569; font-size: 0.88rem;">Please correct the highlighted items before formal approval.</p>
+        </div>
+        """, unsafe_allow_html=True)
         for err in val_result["errors"]:
             st.markdown(f"• **{err['field']}**: {err['message']}")
 
     if val_result["warnings"]:
-        with st.expander(f"⚠️ {len(val_result['warnings'])} Advisory Notice(s)", expanded=False):
+        with st.expander(f"⚠️ {len(val_result['warnings'])} Advisory Notices", expanded=False):
             for w in val_result["warnings"]:
                 st.write(f"• {w['message']}")
 
-    st.markdown("---")
-
-    # 2. Summary Statistics
+    # 2. Executive KPI Metrics
     total_findings = len(findings)
     c_count = sum(1 for f in findings if f.get("compliance_rating") == "C")
     n_count = sum(1 for f in findings if f.get("compliance_rating") == "N")
     obs_count = sum(1 for f in findings if f.get("compliance_rating") == "OBS")
-    y_count = sum(1 for f in findings if f.get("compliance_rating") == "Y")
+    compliant_count = 45 - (c_count + n_count + obs_count)
     
     col_m1, col_m2, col_m3, col_m4, col_m5 = st.columns(5)
     col_m1.metric("Evidence Photos", total_findings)
     col_m2.metric("Critical (C)", c_count)
     col_m3.metric("Non-Critical (N)", n_count)
     col_m4.metric("Observations (OBS)", obs_count)
-    col_m5.metric("Compliant Standards", 45 - (c_count + n_count + obs_count))
+    col_m5.metric("Compliant Clauses", compliant_count)
+
+    st.markdown("<div style='height: 18px;'></div>", unsafe_allow_html=True)
 
     # 3. Interactive Document Sections Preview
-    st.markdown("### 🔍 Report Section Preview")
+    st.markdown("### 📋 Document Sections Live Preview")
     
     tab1, tab2, tab3, tab4, tab5 = st.tabs([
         "🏢 1. Facility Details",
         "👨‍⚖️ 2. Auditor & Scope",
-        "📊 3. Audit Matrix (Table 4)",
-        "🖼️ 4. Photo Evidence (Table 5)",
+        "📊 3. Checklist Matrix (Table 4)",
+        "🖼️ 4. Evidence Gallery (Table 5)",
         "📝 5. Conclusion (Table 6)"
     ])
 
     with tab1:
         st.markdown(f"""
-        | Field | Details |
+        | Field | Official Value |
         | :--- | :--- |
         | **Proprietor Name** | {audit.get('proprietor_name')} |
         | **Trading Name / Facility** | {audit.get('site_name')} |
@@ -88,26 +101,25 @@ def render_screen3():
         | **Business Contact** | {audit.get('business_contact')} ({audit.get('contact_email')}) |
         | **Person in Charge** | {audit.get('person_in_charge')} ({audit.get('pic_email')}) |
         | **Nominated FSS** | {audit.get('nominated_fss')} |
-        | **Council Details** | {audit.get('council_name')} (Reg: {audit.get('council_reg_no')}) |
+        | **Council Authority** | {audit.get('council_name')} (Registration: {audit.get('council_reg_no')}) |
         """)
 
     with tab2:
         st.markdown(f"""
-        | Field | Details |
+        | Field | Official Value |
         | :--- | :--- |
         | **Auditor Name** | {audit.get('auditor_name')} |
-        | **DHHS Reg.** | {audit.get('auditor_reg')} |
-        | **Auditor Phone / Email** | {audit.get('auditor_phone')} / {audit.get('auditor_email')} |
-        | **Date of Current Audit** | {audit.get('audit_date')} at {audit.get('audit_time')} |
-        | **Date of Previous Audit** | {audit.get('prev_audit_date')} |
+        | **DHHS Registration No.** | {audit.get('auditor_reg')} |
+        | **Auditor Contact** | {audit.get('auditor_phone')} • {audit.get('auditor_email')} |
+        | **Audit Inspection Date** | {audit.get('audit_date')} at {audit.get('audit_time')} |
+        | **Previous Audit Date** | {audit.get('prev_audit_date')} |
         | **Scope & Objective** | {audit.get('scope_objective', 'Third Party Food Safety Audit under FSANZ Standards & Vic Food Act 1984.')} |
         | **Type of Audit** | {audit.get('audit_type')} |
         """)
 
     with tab3:
-        st.write("Highlighted items with non-conformances or observations:")
+        st.write("Summary of items with identified findings & actions:")
         
-        # Display rows that have findings
         findings_by_row = {}
         for f in findings:
             r_idx = f.get("standard_row_index")
@@ -128,10 +140,10 @@ def render_screen3():
                         f"**{f.get('fig_label')}:** {f.get('observation')}",
                         unsafe_allow_html=True
                     )
-                    st.write(f"👉 **Action:** {f.get('corrective_action')}")
-                    st.caption(f"📅 Deadline: {f.get('due_date')} | Location: {f.get('location')}")
+                    st.write(f"👉 **Action Required:** {f.get('corrective_action')}")
+                    st.caption(f"📅 Remediation Deadline: {f.get('due_date')} | Area: {f.get('location')}")
 
-        st.caption("All other 40+ standard rows remain marked Compliant (Y) with standard baseline evidence.")
+        st.caption("All remaining 40+ standard rows default to Compliant (Y) with certified food safety practices.")
 
     with tab4:
         st.write("Evidence Photo Grid (matches the 4-column layout of the Regis template):")
@@ -146,7 +158,7 @@ def render_screen3():
 
     with tab5:
         conclusion_val = st.text_area(
-            "Executive Audit Conclusion (Table 6):",
+            "Executive Audit Conclusion (Table 6 in Document):",
             value=audit.get("audit_conclusion") or (
                 f"The facility demonstrated several positive food safety practices, including regular food safety records "
                 f"and dedicated storage arrangements. Staff were observed to have access to necessary equipment. "
@@ -154,14 +166,14 @@ def render_screen3():
                 f"rectification to ensure ongoing compliance with Food Standards Australia New Zealand (FSANZ) Food Safety Standards. "
                 f"Thanking {audit.get('business_contact', 'the team')} and the team at {audit.get('site_name')} for their cooperation."
             ),
-            height=120
+            height=125
         )
         if conclusion_val != audit.get("audit_conclusion"):
             update_audit(audit_id, {"audit_conclusion": conclusion_val}, actor=audit.get("auditor_name", "Auditor"))
 
-    # 4. Formal Approval and Document Generation (FR-07, FR-08)
+    # 4. Formal Sign-off and Report Generation
     st.markdown("---")
-    st.markdown("### ✍️ Auditor Sign-off & Report Issuance")
+    st.markdown("### ✍️ Auditor Legal Sign-off & Generation")
     
     decl_check = st.checkbox(
         "I declare that the information stated by me in this report is true and correct to the best of my knowledge and does not contain anything false or misleading.",
@@ -179,7 +191,7 @@ def render_screen3():
         )
 
     if approve_and_generate:
-        with st.spinner("Generating formatted Word document preserving Regis template layout..."):
+        with st.spinner("Populating Regis Word template and converting to PDF..."):
             today_str = datetime.now().strftime("%Y%m%d_%H%M%S")
             clean_site_name = "".join(c for c in audit.get("site_name", "Report") if c.isalnum() or c in (" ", "_")).strip().replace(" ", "_")
             
@@ -211,16 +223,17 @@ def render_screen3():
             update_audit(audit_id, updates, actor=audit.get("auditor_name"))
             st.session_state.current_audit_data = get_audit(audit_id)
             
-            st.success("🎉 Audit Report successfully generated and approved!")
+            st.success("🎉 Official Regis Audit Report generated and certified!")
             st.rerun()
 
-    # Display Download Buttons if files exist
+    # Download section
     updated_audit = get_audit(audit_id)
     doc_path = updated_audit.get("docx_path")
     pdf_p = updated_audit.get("pdf_path")
 
     if doc_path and Path(doc_path).exists():
-        st.markdown("### 📥 Download Generated Reports")
+        st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
+        st.markdown("### 📥 Download Official Audit Deliverables")
         d_col1, d_col2 = st.columns(2)
         
         with d_col1:

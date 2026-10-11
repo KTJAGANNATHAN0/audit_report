@@ -14,8 +14,9 @@ from database.db import get_audit, get_findings_for_audit, save_findings_for_aud
 def render_screen2():
     st.markdown("""
     <div class="hero-banner">
-        <h1>🔍 Review & Approve AI Findings</h1>
-        <p>Human oversight is required. Verify each observation, corrective action, compliance rating (OBS, N, C, Y), and completion deadline.</p>
+        <div class="hero-badge">Step 2 • Human-in-the-Loop Review</div>
+        <h1>Review & Approve AI Audit Findings</h1>
+        <p>Inspect AI-extracted evidence, adjust compliance ratings (OBS, N, C, Y), refine corrective actions, and set agreed remediation deadlines.</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -31,36 +32,50 @@ def render_screen2():
     findings = st.session_state.get("current_findings") or get_findings_for_audit(audit_id)
 
     if not findings:
-        st.info("No findings found for this audit. You can add one or return to Screen 1.")
+        st.info("No findings found for this audit session. Please return to Screen 1 to upload photos.")
         return
 
-    st.markdown(f"**Audit ID:** `{audit_id}` | **Facility:** `{audit.get('site_name')}` | **Date:** `{audit.get('audit_date')}`")
+    # Header pill
+    st.markdown(f"""
+    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 20px; margin-bottom: 24px; display: flex; flex-wrap: wrap; gap: 16px; align-items: center;">
+        <div><span style="color: #64748b; font-size: 0.8rem; font-weight: 700; text-transform: uppercase;">Audit Session:</span> <code style="color: #0284c7; font-weight: 700;">{audit_id}</code></div>
+        <div><span style="color: #64748b; font-size: 0.8rem; font-weight: 700; text-transform: uppercase;">Facility:</span> <b style="color: #0f172a;">{audit.get('site_name')}</b></div>
+        <div><span style="color: #64748b; font-size: 0.8rem; font-weight: 700; text-transform: uppercase;">Inspection Date:</span> <b style="color: #0f172a;">{audit.get('audit_date')}</b></div>
+        <div><span style="color: #64748b; font-size: 0.8rem; font-weight: 700; text-transform: uppercase;">Auditor:</span> <b style="color: #0f172a;">{audit.get('auditor_name')}</b></div>
+    </div>
+    """, unsafe_allow_html=True)
     
-    # Quick Summary Bar
+    # Quick Summary Metrics
     c_count = sum(1 for f in findings if f.get("compliance_rating") == "C")
     n_count = sum(1 for f in findings if f.get("compliance_rating") == "N")
     obs_count = sum(1 for f in findings if f.get("compliance_rating") == "OBS")
     y_count = sum(1 for f in findings if f.get("compliance_rating") == "Y")
     
     m1, m2, m3, m4 = st.columns(4)
-    m1.metric("Critical (C)", c_count)
+    m1.metric("Critical Deficiencies (C)", c_count)
     m2.metric("Non-Critical (N)", n_count)
     m3.metric("Observations (OBS)", obs_count)
-    m4.metric("Compliant (Y)", y_count)
+    m4.metric("Compliant Items (Y)", y_count)
 
-    st.markdown("---")
+    st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
 
     standard_options = get_standard_options()
-    # Lookup map for options
     std_row_indices = [opt[0] for opt in standard_options]
 
     updated_findings = []
     
     for idx, f in enumerate(findings):
         fig_label = f.get("fig_label") or f"Fig. {idx + 1}"
+        current_rating = f.get("compliance_rating", "N")
+        badge_class = f"badge-{current_rating.lower()}"
         
         with st.container(border=True):
-            st.markdown(f"### {fig_label} — Evidence & Finding Details")
+            st.markdown(f"""
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h3 style="margin: 0; font-size: 1.2rem; color: #0f172a;">{fig_label} — Evidence Finding</h3>
+                <span class="badge {badge_class}">{current_rating}</span>
+            </div>
+            """, unsafe_allow_html=True)
             
             col_img, col_details = st.columns([1, 2])
             
@@ -70,9 +85,14 @@ def render_screen2():
                     img = Image.open(photo_path)
                     st.image(img, caption=f"{fig_label}", use_container_width=True)
                 else:
-                    st.warning("Photo not found")
+                    st.warning("Photo unavailable")
                     
-                st.caption(f"**Auditor Note:** {f.get('user_notes', 'N/A')}")
+                st.markdown(f"""
+                <div style="background: #f8fafc; border-radius: 8px; padding: 10px; margin-top: 8px; font-size: 0.85rem; border: 1px solid #e2e8f0;">
+                    <span style="color: #64748b; font-weight: 600;">Auditor Notes:</span><br>
+                    <span style="color: #1e293b;">{f.get('user_notes', 'N/A')}</span>
+                </div>
+                """, unsafe_allow_html=True)
                 
             with col_details:
                 # 1. Mapped Standard
@@ -94,13 +114,13 @@ def render_screen2():
                 c_loc, c_rate = st.columns([1, 1])
                 with c_loc:
                     loc_val = st.text_input(
-                        "Location / Department",
+                        "Location / Department Area:",
                         value=f.get("location", "Main Kitchen"),
                         key=f"loc_{idx}"
                     )
                 with c_rate:
                     rating_val = st.selectbox(
-                        "Compliance Rating",
+                        "Compliance Rating Classification:",
                         options=["OBS", "N", "C", "Y"],
                         index=["OBS", "N", "C", "Y"].index(f.get("compliance_rating", "N")),
                         key=f"rating_{idx}",
@@ -109,15 +129,15 @@ def render_screen2():
 
                 # 2. Observation
                 obs_val = st.text_area(
-                    "Visible Evidence / Observation (Factual description):",
+                    "Factual Evidence Statement (Inserted into Regis Report):",
                     value=f.get("observation", ""),
                     key=f"obs_{idx}",
-                    height=90
+                    height=85
                 )
                 
                 # 3. Risk Statement
                 risk_val = st.text_input(
-                    "Food Safety Hazard / Risk Statement:",
+                    "Food Safety Hazard & Contamination Risk:",
                     value=f.get("risk", ""),
                     key=f"risk_{idx}"
                 )
@@ -126,21 +146,20 @@ def render_screen2():
                 c_act, c_due = st.columns([2, 1])
                 with c_act:
                     action_val = st.text_area(
-                        "Corrective Action Required:",
+                        "Mandated Corrective Action:",
                         value=f.get("corrective_action", ""),
                         key=f"action_{idx}",
-                        height=80
+                        height=75
                     )
                 with c_due:
                     due_val = st.text_input(
-                        "Agreed Deadline (DD/MM/YYYY):",
+                        "Agreed Deadline:",
                         value=f.get("due_date", "28/08/2026"),
                         key=f"due_{idx}"
                     )
 
-                # Auditor approval toggle for this finding
                 is_approved = st.checkbox(
-                    "✓ Verified and Approved by Auditor",
+                    "✓ Verified & Approved by Auditor",
                     value=f.get("review_status") == "approved",
                     key=f"approved_{idx}"
                 )

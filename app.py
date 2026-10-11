@@ -36,12 +36,17 @@ from ui.screen4_history import render_screen4
 if "current_screen" not in st.session_state:
     st.session_state.current_screen = "Screen 1 — New Audit"
 
-# --- Sidebar Navigation ---
+# --- Executive Sidebar ---
 with st.sidebar:
     st.markdown("""
-    <div style="text-align: center; padding: 10px 0;">
-        <h2 style="margin: 0; color: #0d9488; font-weight: 800;">REGIS AGED CARE</h2>
-        <p style="margin: 4px 0 16px 0; font-size: 0.85rem; color: #94a3b8; font-weight: 600;">AI Food Safety Audit Suite</p>
+    <div style="padding: 12px 6px 18px 6px;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+            <div style="background: linear-gradient(135deg, #0284c7, #0f766e); width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; box-shadow: 0 2px 8px rgba(2, 132, 199, 0.25);">🛡️</div>
+            <div>
+                <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: #0f172a; letter-spacing: -0.01em;">REGIS AGED CARE</h3>
+                <span style="font-size: 0.75rem; color: #0284c7; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;">AI Audit Suite</span>
+            </div>
+        </div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -53,27 +58,32 @@ with st.sidebar:
     ]
 
     selected_screen = st.radio(
-        "Navigation",
+        "Navigation Menu",
         screens,
         index=screens.index(st.session_state.current_screen) if st.session_state.current_screen in screens else 0,
         key="nav_radio"
     )
     st.session_state.current_screen = selected_screen
 
-    st.markdown("---")
-    
     # Active Audit Badge in Sidebar
     active_audit_id = st.session_state.get("current_audit_id")
     if active_audit_id:
-        st.markdown(f"**Active Audit:** `{active_audit_id}`")
-        if st.button("➕ Start Another Audit", use_container_width=True):
+        st.markdown("---")
+        st.markdown(f"""
+        <div style="background: #e0f2fe; border: 1px solid #bae6fd; border-radius: 10px; padding: 12px; margin-bottom: 12px;">
+            <span style="font-size: 0.72rem; color: #475569; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Active Audit Session</span>
+            <div style="font-weight: 800; color: #0369a1; font-size: 0.95rem; margin-top: 2px;">{active_audit_id}</div>
+        </div>
+        """, unsafe_allow_html=True)
+        if st.button("➕ Start New Audit", use_container_width=True):
             st.session_state.current_audit_id = None
             st.session_state.current_findings = None
             st.session_state.photo_notes = {}
             st.session_state.current_screen = "Screen 1 — New Audit"
             st.rerun()
 
-
+    st.markdown("---")
+    st.caption("🔒 Verified Food Safety Standard FSANZ 3.2.1 • 3.2.2 • 3.2.3")
 
 # --- Route Screen ---
 if st.session_state.current_screen == "Screen 1 — New Audit":

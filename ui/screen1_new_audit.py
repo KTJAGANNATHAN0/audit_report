@@ -5,90 +5,102 @@ Fulfills FR-01, FR-02, FR-03, and PRD Section 8.
 """
 
 import os
-import shutil
 from pathlib import Path
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 import streamlit as st
 from PIL import Image
 from core.config import REGIS_SITES, DEFAULT_AUDITOR, UPLOADS_DIR, SUPPORTED_VISION_MODELS, DEFAULT_VISION_MODEL, OPENROUTER_API_KEY
 from core.ai_service import analyze_photo_evidence
 from database.db import create_audit, save_findings_for_audit
 
-SAMPLE_NOTE_TEMPLATES = [
-    "Dirty microwave, food residue on top interior, clean immediately.",
-    "Canopy filters greasy, oil residue buildup above cooking range.",
-    "Exposed unsealed timber below servery bench, potential bacterial harbourage.",
-    "Hand wash basin obstructed by dishes and cleaning bottles.",
-    "Visible mould growth on silicone seals around wash sink.",
-    "Uncovered food trays stored in coolroom without date labels.",
-    "Dented food can found in dry storage shelving."
+QUICK_OBSERVATION_TEMPLATES = [
+    "Dirty microwave with food residue on top interior",
+    "Canopy grease buildup above cooking range",
+    "Exposed unsealed timber below servery bench",
+    "Hand wash basin obstructed by dishes and items",
+    "Visible mould growth on silicone seals around sink",
+    "Uncovered food trays inside cool room without labels",
+    "Dented food can found in dry store shelving",
+    "Dishwasher rinse temperature below standard",
+    "Food stored directly on coolroom floor",
+    "Damaged ceiling coving in food preparation area"
 ]
 
 def render_screen1():
+    # --- Hero Header ---
     st.markdown("""
     <div class="hero-banner">
-        <h1>📸 New Daily Food Safety Audit</h1>
-        <p>Upload inspection photos, enter short keywords, and let OpenRouter AI generate structured findings mapped directly to the Regis Audit Standard.</p>
+        <div class="hero-badge">🛡️ Quality & Food Safety Compliance • FSANZ Standards</div>
+        <h1>Daily Food Safety Audit Automation</h1>
+        <p>Effortlessly transform field inspection photos and short notes into compliant, structured Regis audit findings with OpenRouter Vision AI.</p>
     </div>
     """, unsafe_allow_html=True)
 
-    # 1. Site and Audit Details
-    with st.expander("🏢 Audit Header & Facility Details", expanded=True):
+    # --- Step 1: Audit Metadata & Facility Profiles ---
+    st.markdown("""
+    <div class="step-header">
+        <div class="step-number">1</div>
+        <h3 class="step-title">Facility Profile & Audit Information</h3>
+    </div>
+    """, unsafe_allow_html=True)
+
+    with st.expander("🏢 Inspect & Edit Facility Metadata", expanded=True):
         col_site, col_date = st.columns([2, 1])
         
-        site_names = [s["site_name"] for s in REGIS_SITES] + ["Other / Custom Site..."]
-        
-        # Check session defaults
+        site_names = [s["site_name"] for s in REGIS_SITES] + ["Other / Custom Facility..."]
         current_site_name = st.session_state.get("audit_site_name", site_names[0])
         site_idx = site_names.index(current_site_name) if current_site_name in site_names else 0
         
         with col_site:
-            selected_site = st.selectbox("Select Regis Facility", site_names, index=site_idx)
+            selected_site = st.selectbox("Select Regis Aged Care Facility", site_names, index=site_idx)
             
         with col_date:
-            audit_date = st.date_input("Audit Date", value=st.session_state.get("audit_date_val", date.today()))
-            audit_time = st.text_input("Audit Time", value=st.session_state.get("audit_time_val", "9:30am"))
+            audit_date = st.date_input("Audit Inspection Date", value=st.session_state.get("audit_date_val", date.today()))
+            audit_time = st.text_input("Inspection Time", value=st.session_state.get("audit_time_val", "9:30am"))
 
-        # Look up preset site details
         site_preset = next((s for s in REGIS_SITES if s["site_name"] == selected_site), None)
         
         c1, c2, c3 = st.columns(3)
         with c1:
-            proprietor = st.text_input("Proprietor Name", value=site_preset["proprietor_name"] if site_preset else "Regis Aged Care")
-            trading_name = st.text_input("Trading Name", value=selected_site if selected_site != "Other / Custom Site..." else "")
+            proprietor = st.text_input("Proprietor", value=site_preset["proprietor_name"] if site_preset else "Regis Aged Care")
+            trading_name = st.text_input("Trading Name", value=selected_site if selected_site != "Other / Custom Facility..." else "")
             business_address = st.text_input("Business Address", value=site_preset["business_address"] if site_preset else "")
-            phone_number = st.text_input("Phone Number", value=site_preset["phone_number"] if site_preset else "")
+            phone_number = st.text_input("Facility Phone", value=site_preset["phone_number"] if site_preset else "")
 
         with c2:
             business_contact = st.text_input("Business Contact", value=site_preset["business_contact"] if site_preset else "Bryan Seeborun")
             contact_email = st.text_input("Contact Email", value=site_preset["contact_email"] if site_preset else "bseeborun@regis.com.au")
-            person_in_charge = st.text_input("Person in Charge", value=site_preset["person_in_charge"] if site_preset else "Site Manager")
+            person_in_charge = st.text_input("Person in Charge (PIC)", value=site_preset["person_in_charge"] if site_preset else "Site Manager")
             pic_email = st.text_input("PIC Email", value=site_preset["pic_email"] if site_preset else "")
 
         with c3:
             nominated_fss = st.text_input("Nominated FSS", value=site_preset["nominated_fss"] if site_preset else "Sunil Kumar / Damith Yagamuni")
-            council_name = st.text_input("Council / Shire", value=site_preset["council_name"] if site_preset else "City of Greater Dandenong")
-            council_reg_no = st.text_input("Registration No.", value=site_preset["council_reg_no"] if site_preset else "F-2247 Expiry Date 31/12/2026")
+            council_name = st.text_input("Council / Shire Authority", value=site_preset["council_name"] if site_preset else "City of Greater Dandenong")
+            council_reg_no = st.text_input("Registration & Expiry No.", value=site_preset["council_reg_no"] if site_preset else "F-2247 Expiry Date 31/12/2026")
             council_email = st.text_input("Council Email", value=site_preset["council_email"] if site_preset else "council@cgd.vic.gov.au")
 
-        st.markdown("---")
-        st.subheader("Auditor Credentials")
+        st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
+        st.markdown("**Auditor Official Credentials**")
         ac1, ac2, ac3, ac4 = st.columns(4)
         with ac1:
             auditor_name = st.text_input("Auditor Name", value=DEFAULT_AUDITOR["name"])
         with ac2:
-            auditor_reg = st.text_input("DHHS Reg.", value=DEFAULT_AUDITOR["dhhs_reg"])
+            auditor_reg = st.text_input("DHHS Reg. Number", value=DEFAULT_AUDITOR["dhhs_reg"])
         with ac3:
             auditor_phone = st.text_input("Auditor Phone", value=DEFAULT_AUDITOR["phone"])
         with ac4:
             auditor_email = st.text_input("Auditor Email", value=DEFAULT_AUDITOR["email"])
 
-    # 2. Photo Upload & Short Notes Section
-    st.markdown("### 📷 2. Audit Evidence: Photos & Observations")
-    st.write("Take pictures on mobile or upload audit evidence photos. Enter a quick keyword note for each.")
+    # --- Step 2: Audit Evidence Photos & Notes ---
+    st.markdown("""
+    <div class="step-header">
+        <div class="step-number">2</div>
+        <h3 class="step-title">Inspection Evidence & Observations</h3>
+    </div>
+    """, unsafe_allow_html=True)
 
     uploaded_files = st.file_uploader(
-        "Upload one or multiple photos (JPG, PNG, WebP)",
+        "Drop or capture audit photos (JPG, PNG, WebP) — Multiple files supported",
         type=["jpg", "jpeg", "png", "webp"],
         accept_multiple_files=True,
         key="audit_photos_uploader"
@@ -100,36 +112,40 @@ def render_screen1():
     photo_entries = []
     
     if uploaded_files:
-        st.info(f"📁 {len(uploaded_files)} photo(s) selected for this audit. Provide a short note for each below.")
+        st.markdown(f"""
+        <div style="background: #e0f2fe; border: 1px solid #bae6fd; border-radius: 12px; padding: 12px 18px; margin-bottom: 20px;">
+            <span style="font-weight: 700; color: #0369a1;">📸 {len(uploaded_files)} Evidence Photograph(s) Loaded.</span>
+            <span style="color: #475569; font-size: 0.9rem;"> Add concise notes or select standard snippets for each item below.</span>
+        </div>
+        """, unsafe_allow_html=True)
         
-        # Display photos in 2-column grid for clean mobile and desktop layout
+        # Grid layout for uploaded images
         cols = st.columns(2)
         for idx, file in enumerate(uploaded_files):
             col = cols[idx % 2]
             with col:
                 with st.container(border=True):
-                    st.markdown(f"**Evidence Photo #{idx + 1}** — `{file.name}`")
+                    st.markdown(f"**Fig. {idx + 1}** — `{file.name}`")
                     img = Image.open(file)
                     st.image(img, use_container_width=True)
                     
                     note_key = f"note_{file.name}_{idx}"
                     default_note = st.session_state.photo_notes.get(note_key, "")
                     
-                    # Quick template chips
                     sample_choice = st.selectbox(
-                        f"Quick insert template for Photo #{idx + 1}:",
-                        ["(Select keyword snippet..."] + SAMPLE_NOTE_TEMPLATES,
+                        f"Quick insert template for Fig. {idx + 1}:",
+                        ["(Select keyword template...)"] + QUICK_OBSERVATION_TEMPLATES,
                         key=f"sample_{idx}"
                     )
                     if sample_choice and not sample_choice.startswith("("):
                         default_note = sample_choice
 
                     note_input = st.text_area(
-                        f"Short observation / keywords (Photo #{idx + 1})",
+                        f"Observation keywords for Fig. {idx + 1}:",
                         value=default_note,
                         placeholder="e.g. Dirty microwave, food residue on top interior, clean immediately.",
                         key=note_key,
-                        height=80
+                        height=85
                     )
                     st.session_state.photo_notes[note_key] = note_input
 
@@ -139,38 +155,41 @@ def render_screen1():
                         "notes": note_input
                     })
 
-    # 3. Model & AI Settings
-    with st.expander("⚙️ AI Model & API Configuration", expanded=False):
+    # --- Step 3: AI Configuration ---
+    st.markdown("""
+    <div class="step-header">
+        <div class="step-number">3</div>
+        <h3 class="step-title">AI Processing Configuration</h3>
+    </div>
+    """, unsafe_allow_html=True)
+
+    with st.expander("⚙️ OpenRouter API & Vision Model", expanded=False):
         mc1, mc2 = st.columns([1, 1])
         with mc1:
             api_key_input = st.text_input(
                 "OpenRouter API Key",
                 value=st.session_state.get("openrouter_api_key", os.getenv("OPENROUTER_API_KEY", "")),
                 type="password",
-                help="Enter your OpenRouter API key. If omitted, the system will use intelligent offline audit heuristics."
+                help="Enter your OpenRouter key. When omitted, intelligent local food safety heuristics will process findings."
             )
             if api_key_input:
                 st.session_state.openrouter_api_key = api_key_input
         with mc2:
-            model_options = [
-                "google/gemini-2.0-flash-001",
-                "meta-llama/llama-3.2-11b-vision-instruct",
-                "anthropic/claude-3.5-sonnet",
-                "openai/gpt-4o-mini",
-                "openai/gpt-4o"
-            ]
-            selected_model = st.selectbox("Vision AI Model", model_options, index=0)
+            selected_model = st.selectbox(
+                "Vision-Capable AI Model",
+                SUPPORTED_VISION_MODELS,
+                index=0
+            )
 
-    # 4. Action Button
+    # --- Submit Action ---
     st.markdown("<br>", unsafe_allow_html=True)
     start_btn = st.button("🚀 Analyze Evidence with AI & Generate Findings", type="primary", use_container_width=True)
 
     if start_btn:
         if not photo_entries:
-            st.warning("⚠️ Please upload at least one audit photo to proceed.")
+            st.warning("⚠️ Please upload at least one inspection photograph to begin.")
             return
 
-        # Prepare audit record in DB
         audit_payload = {
             "site_name": trading_name or selected_site,
             "proprietor_name": proprietor,
@@ -201,7 +220,6 @@ def render_screen1():
         st.session_state.current_audit_id = audit_id
         st.session_state.current_audit_data = audit_payload
 
-        # Save photos to disk and run AI analysis
         audit_upload_dir = UPLOADS_DIR / audit_id
         audit_upload_dir.mkdir(parents=True, exist_ok=True)
 
@@ -214,13 +232,11 @@ def render_screen1():
                 text=f"AI analyzing Photo {i + 1} of {total} ({entry['file'].name})..."
             )
             
-            # Save image
             safe_filename = f"fig_{i + 1}_{Path(entry['file'].name).suffix.lower()}"
             img_dest = audit_upload_dir / safe_filename
             with open(img_dest, "wb") as f_out:
                 f_out.write(entry["file"].getbuffer())
 
-            # Call AI Vision
             user_notes = entry["notes"]
             ai_result = analyze_photo_evidence(
                 photo_path=str(img_dest),
@@ -230,9 +246,6 @@ def render_screen1():
             )
 
             deadline_days = ai_result.get("suggested_deadline_days", 14)
-            due_date_str = (datetime.now() + datetime.timedelta(days=deadline_days) if hasattr(datetime, "timedelta") else datetime.now()).strftime("%d/%m/%Y")
-            # Calculate due date safely
-            from datetime import timedelta
             due_date_calc = (datetime.now() + timedelta(days=deadline_days)).strftime("%d/%m/%Y")
 
             finding_item = {
@@ -257,7 +270,6 @@ def render_screen1():
         save_findings_for_audit(audit_id, analyzed_findings, actor=auditor_name)
         st.session_state.current_findings = analyzed_findings
 
-        # Transition to Screen 2
         st.session_state.current_screen = "Screen 2 — AI Findings"
-        st.success(f"✅ Processed {len(analyzed_findings)} findings successfully! Redirecting to review screen...")
+        st.success(f"✅ Generated {len(analyzed_findings)} findings successfully! Navigating to review screen...")
         st.rerun()

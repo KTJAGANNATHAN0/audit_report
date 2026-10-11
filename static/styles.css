@@ -1,113 +1,394 @@
-/* Regis AI Audit Report Automation - Modern Styling */
+/* ==========================================================================
+   REGIS AGED CARE AI AUDIT AUTOMATION - PRISTINE WHITE/LIGHT DESIGN SYSTEM
+   Clean, Executive, Enterprise Medical & Food Safety UI/UX
+   ========================================================================== */
 
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap');
+
+/* --- Root Design Tokens (Light Theme) --- */
 :root {
-  --primary-color: #0f766e;
-  --primary-hover: #115e59;
-  --primary-light: #ccfbf1;
-  --secondary-color: #0369a1;
-  --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-  --card-bg: rgba(255, 255, 255, 0.05);
-  --border-color: rgba(255, 255, 255, 0.1);
-  --text-main: #f8fafc;
-  --text-muted: #94a3b8;
+  --font-main: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-heading: 'Outfit', sans-serif;
+  
+  --color-primary: #0284c7;
+  --color-primary-hover: #0369a1;
+  --color-teal: #0f766e;
+  
+  --bg-page: #ffffff;
+  --bg-subtle: #f8fafc;
+  --bg-card: #ffffff;
+  --bg-hover: #f1f5f9;
+  
+  --border-light: #e2e8f0;
+  --border-focus: #0284c7;
+  
+  --text-main: #0f172a;
+  --text-body: #1e293b;
+  --text-muted: #64748b;
+  --text-faint: #94a3b8;
+  
+  --rating-y: #16a34a;
+  --rating-obs: #d97706;
+  --rating-n: #ea580c;
+  --rating-c: #dc2626;
 }
 
-/* Metric card styling */
-div[data-testid="stMetric"] {
-  background: rgba(30, 41, 59, 0.7);
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  border-radius: 12px;
-  padding: 16px 20px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+/* --- Global Typography --- */
+html, body, [class*="css"], [class*="st-"] {
+  font-family: var(--font-main) !important;
+  color: var(--text-body) !important;
+  background-color: var(--bg-page) !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-div[data-testid="stMetric"]:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+h1, h2, h3, h4, .hero-title {
+  font-family: var(--font-heading) !important;
+  letter-spacing: -0.02em;
+  color: var(--text-main) !important;
 }
 
-/* Custom badges */
-.badge {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: 9999px;
+/* --- Main Layout Padding --- */
+.main .block-container {
+  max-width: 1280px !important;
+  padding-top: 1.8rem !important;
+  padding-bottom: 3.5rem !important;
+  padding-left: 2rem !important;
+  padding-right: 2rem !important;
+  background-color: #ffffff !important;
+}
+
+/* --- Clean Hero Banner --- */
+.hero-banner {
+  position: relative;
+  background: linear-gradient(135deg, #f0fdfa 0%, #e0f2fe 55%, #ffffff 100%);
+  border: 1px solid #bae6fd;
+  border-radius: 18px;
+  padding: 28px 34px;
+  margin-bottom: 26px;
+  box-shadow: 0 4px 20px -2px rgba(2, 132, 199, 0.08);
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #e0f2fe;
+  border: 1px solid #7dd3fc;
+  color: #0369a1;
   font-size: 0.78rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.badge-y {
-  background-color: rgba(34, 197, 94, 0.2);
-  color: #4ade80;
-  border: 1px solid rgba(34, 197, 94, 0.4);
-}
-
-.badge-obs {
-  background-color: rgba(245, 158, 11, 0.2);
-  color: #fbbf24;
-  border: 1px solid rgba(245, 158, 11, 0.4);
-}
-
-.badge-n {
-  background-color: rgba(249, 115, 22, 0.2);
-  color: #fb923c;
-  border: 1px solid rgba(249, 115, 22, 0.4);
-}
-
-.badge-c {
-  background-color: rgba(239, 68, 68, 0.2);
-  color: #f87171;
-  border: 1px solid rgba(239, 68, 68, 0.4);
-}
-
-/* Finding review card */
-.finding-card {
-  background: rgba(30, 41, 59, 0.85);
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  border-radius: 14px;
-  padding: 20px;
-  margin-bottom: 24px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-/* Header Banner */
-.hero-banner {
-  background: linear-gradient(135deg, #0d9488 0%, #0369a1 100%);
-  padding: 24px 32px;
-  border-radius: 16px;
-  color: white;
-  margin-bottom: 24px;
-  box-shadow: 0 10px 25px -5px rgba(13, 148, 136, 0.3);
+  letter-spacing: 0.06em;
+  padding: 5px 13px;
+  border-radius: 9999px;
+  margin-bottom: 12px;
 }
 
 .hero-banner h1 {
-  margin: 0 0 8px 0;
-  font-size: 1.9rem;
-  font-weight: 800;
-  color: #ffffff;
+  font-size: 2.05rem !important;
+  font-weight: 800 !important;
+  margin: 0 0 6px 0 !important;
+  color: #0f172a !important;
 }
 
 .hero-banner p {
-  margin: 0;
-  font-size: 1.0rem;
-  opacity: 0.95;
-  color: #e2e8f0;
+  color: #475569 !important;
+  font-size: 1.0rem !important;
+  margin: 0 !important;
+  max-width: 820px;
+  line-height: 1.6;
 }
 
-/* Action button emphasis */
+/* --- Step Header --- */
+.step-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 1.8rem;
+  margin-bottom: 1rem;
+}
+
+.step-number {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #0284c7, #0f766e);
+  color: white;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.95rem;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.25);
+}
+
+.step-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+/* --- Executive Metric Cards --- */
+div[data-testid="stMetric"] {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 14px !important;
+  padding: 16px 20px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+div[data-testid="stMetric"]::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #0284c7, #0f766e);
+}
+
+div[data-testid="stMetric"]:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.07) !important;
+  border-color: #cbd5e1 !important;
+}
+
+div[data-testid="stMetricLabel"] {
+  color: #64748b !important;
+  font-size: 0.82rem !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+}
+
+div[data-testid="stMetricValue"] {
+  color: #0f172a !important;
+  font-weight: 800 !important;
+  font-size: 1.85rem !important;
+}
+
+/* --- Expander / Accordion Panels --- */
+div[data-testid="stExpander"] {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 14px !important;
+  margin-bottom: 18px !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03) !important;
+  overflow: hidden !important;
+}
+
+div[data-testid="stExpander"] summary {
+  padding: 14px 18px !important;
+  font-weight: 700 !important;
+  color: #0f172a !important;
+  font-size: 1.0rem !important;
+  background-color: #f8fafc !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+}
+
+div[data-testid="stExpander"] summary:hover {
+  background-color: #f1f5f9 !important;
+}
+
+/* --- Clean Form Inputs & Textareas --- */
+div[data-baseweb="input"], div[data-baseweb="textarea"] {
+  background-color: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 10px !important;
+  color: #0f172a !important;
+  transition: all 0.2s ease !important;
+}
+
+div[data-baseweb="input"]:focus-within, div[data-baseweb="textarea"]:focus-within {
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15) !important;
+}
+
+div[data-baseweb="select"] > div {
+  background-color: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 10px !important;
+  color: #0f172a !important;
+}
+
+div[data-baseweb="select"]:focus-within > div {
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15) !important;
+}
+
+input, textarea {
+  color: #0f172a !important;
+}
+
+label[data-testid="stWidgetLabel"] p {
+  color: #334155 !important;
+  font-weight: 600 !important;
+  font-size: 0.88rem !important;
+}
+
+/* --- Modern White Dropzone File Uploader --- */
+div[data-testid="stFileUploader"] {
+  background: #f8fafc !important;
+  border: 2px dashed #93c5fd !important;
+  border-radius: 16px !important;
+  padding: 22px 18px !important;
+  transition: all 0.2s ease !important;
+}
+
+div[data-testid="stFileUploader"]:hover {
+  background: #f0f9ff !important;
+  border-color: #0284c7 !important;
+}
+
+/* --- Buttons --- */
+div.stButton > button {
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+  padding: 9px 20px !important;
+  font-size: 0.94rem !important;
+  transition: all 0.2s ease !important;
+}
+
+/* Primary Button */
 div.stButton > button[kind="primary"] {
-  background: linear-gradient(135deg, #0d9488 0%, #0284c7 100%);
-  border: none;
-  border-radius: 10px;
-  font-weight: 600;
-  padding: 10px 24px;
-  transition: all 0.2s ease;
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25) !important;
 }
 
 div.stButton > button[kind="primary"]:hover {
-  opacity: 0.92;
-  box-shadow: 0 4px 14px rgba(13, 148, 136, 0.4);
-  transform: translateY(-1px);
+  opacity: 0.93 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 16px rgba(2, 132, 199, 0.35) !important;
+}
+
+/* Secondary Button */
+div.stButton > button[kind="secondary"] {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #1e293b !important;
+}
+
+div.stButton > button[kind="secondary"]:hover {
+  background: #f8fafc !important;
+  border-color: #94a3b8 !important;
+}
+
+/* Download Buttons */
+div[data-testid="stDownloadButton"] > button {
+  border-radius: 10px !important;
+  font-weight: 700 !important;
+  padding: 10px 22px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+}
+
+/* --- Containers / Card Wrappers --- */
+div[data-testid="stVerticalBlock"] > div[data-testid="stVerticalBlockBorderWrapper"] {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 14px !important;
+  padding: 18px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03) !important;
+  margin-bottom: 16px !important;
+}
+
+/* --- High-Contrast Compliance Badges --- */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.badge-y {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+}
+
+.badge-obs {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.badge-n {
+  background: #ffedd5;
+  color: #c2410c;
+  border: 1px solid #fed7aa;
+}
+
+.badge-c {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+}
+
+/* --- Evidence Photo Frame --- */
+div[data-testid="stImage"] img {
+  border-radius: 10px !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06) !important;
+}
+
+/* --- Tabs Design --- */
+button[data-baseweb="tab"] {
+  font-weight: 700 !important;
+  font-size: 0.95rem !important;
+  padding: 11px 18px !important;
+  color: #64748b !important;
+}
+
+button[data-baseweb="tab"][aria-selected="true"] {
+  color: #0284c7 !important;
+  border-bottom-color: #0284c7 !important;
+}
+
+/* --- Pristine Sidebar --- */
+section[data-testid="stSidebar"] {
+  background: #f8fafc !important;
+  border-right: 1px solid #e2e8f0 !important;
+}
+
+section[data-testid="stSidebar"] * {
+  color: #1e293b !important;
+}
+
+div[data-testid="stRadio"] label {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 10px !important;
+  padding: 10px 14px !important;
+  margin-bottom: 5px !important;
+  transition: all 0.2s ease !important;
+  cursor: pointer !important;
+}
+
+div[data-testid="stRadio"] label:hover {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+}
+
+div[data-testid="stRadio"] label[data-checked="true"] {
+  background: #e0f2fe !important;
+  border-color: #0284c7 !important;
+}
+
+div[data-testid="stRadio"] label[data-checked="true"] span {
+  color: #0369a1 !important;
+  font-weight: 700 !important;
+}
+
+div[data-testid="stAlert"] {
+  border-radius: 12px !important;
 }
