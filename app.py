@@ -31,7 +31,6 @@ from ui.screen1_new_audit import render_screen1
 from ui.screen2_findings import render_screen2
 from ui.screen3_preview import render_screen3
 from ui.screen4_history import render_screen4
-from core.pdf_converter import find_libreoffice_executable
 
 # Session state initialization
 if "current_screen" not in st.session_state:
@@ -74,24 +73,7 @@ with st.sidebar:
             st.session_state.current_screen = "Screen 1 — New Audit"
             st.rerun()
 
-    st.markdown("---")
 
-    # Engine Status Indicators
-    st.markdown("##### 🔌 Engine Diagnostics")
-    lo_exe = find_libreoffice_executable()
-    if lo_exe:
-        st.caption("🟢 **PDF Engine:** LibreOffice Headless (Ready)")
-    else:
-        st.caption("🟡 **PDF Engine:** MS Word COM Automation (Ready)")
-
-    api_key_configured = bool(os.getenv("OPENROUTER_API_KEY") or st.session_state.get("openrouter_api_key"))
-    if api_key_configured:
-        st.caption("🟢 **AI Vision:** OpenRouter API Connected")
-    else:
-        st.caption("🟡 **AI Vision:** Offline Heuristic / Set API Key in S1")
-
-    st.caption("🟢 **Baseline Template:** Regis Word Template v1.0")
-    st.caption("🟢 **Database:** SQLite Local Storage (Ready)")
 
 # --- Route Screen ---
 if st.session_state.current_screen == "Screen 1 — New Audit":
