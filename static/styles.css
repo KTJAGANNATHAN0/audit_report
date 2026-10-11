@@ -392,3 +392,96 @@ div[data-testid="stRadio"] label[data-checked="true"] span {
 div[data-testid="stAlert"] {
   border-radius: 12px !important;
 }
+
+/* --- AI Model & API Configuration Dedicated Block --- */
+.ai-config-panel {
+  background: #ffffff !important;
+  border: 1px solid #bae6fd !important;
+  border-radius: 16px !important;
+  padding: 22px 26px !important;
+  box-shadow: 0 4px 16px -2px rgba(2, 132, 199, 0.08) !important;
+  margin-top: 10px !important;
+  margin-bottom: 24px !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.ai-config-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #0284c7, #0f766e);
+}
+
+.ai-config-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.ai-config-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ai-config-title h3 {
+  margin: 0 !important;
+  font-size: 1.25rem !important;
+  font-weight: 800 !important;
+  color: #0f172a !important;
+}
+
+.ai-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 9999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.ai-status-connected {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+}
+
+.ai-status-heuristic {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.ai-features-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed #e2e8f0;
+}
+
+.ai-feature-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+

@@ -155,31 +155,77 @@ def render_screen1():
                         "notes": note_input
                     })
 
-    # --- Step 3: AI Configuration ---
+    # --- Step 3: AI Configuration Dedicated Card ---
     st.markdown("""
     <div class="step-header">
         <div class="step-number">3</div>
-        <h3 class="step-title">AI Processing Configuration</h3>
+        <h3 class="step-title">AI Model & API Configuration</h3>
     </div>
     """, unsafe_allow_html=True)
 
-    with st.expander("⚙️ OpenRouter API & Vision Model", expanded=False):
-        mc1, mc2 = st.columns([1, 1])
-        with mc1:
-            api_key_input = st.text_input(
-                "OpenRouter API Key",
-                value=st.session_state.get("openrouter_api_key", os.getenv("OPENROUTER_API_KEY", "")),
-                type="password",
-                help="Enter your OpenRouter key. When omitted, intelligent local food safety heuristics will process findings."
-            )
-            if api_key_input:
-                st.session_state.openrouter_api_key = api_key_input
-        with mc2:
-            selected_model = st.selectbox(
-                "Vision-Capable AI Model",
-                SUPPORTED_VISION_MODELS,
-                index=0
-            )
+    current_api_key = st.session_state.get("openrouter_api_key", os.getenv("OPENROUTER_API_KEY", ""))
+    is_connected = bool(current_api_key and current_api_key.strip())
+    
+    status_class = "ai-status-connected" if is_connected else "ai-status-heuristic"
+    status_icon = "🟢" if is_connected else "🟡"
+    status_text = "API Key Active • Live OpenRouter AI" if is_connected else "Offline Mode • Local Heuristic Active"
+
+    st.markdown(f"""
+    <div class="ai-config-panel">
+        <div class="ai-config-header">
+            <div class="ai-config-title">
+                <span style="font-size: 1.35rem;">⚙️</span>
+                <h3>OpenRouter Vision Engine Settings</h3>
+            </div>
+            <div class="ai-status-pill {status_class}">
+                <span>{status_icon}</span>
+                <span>{status_text}</span>
+            </div>
+        </div>
+        <p style="color: #64748b; font-size: 0.92rem; margin: 0 0 16px 0;">
+            Configure your OpenRouter API key and select your preferred multimodal vision model. 
+            Inspection photos and notes are processed into structured JSON adhering to FSANZ Food Safety Standards.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    col_key, col_model = st.columns([1, 1])
+    
+    with col_key:
+        api_key_input = st.text_input(
+            "🔑 OpenRouter API Key",
+            value=current_api_key,
+            type="password",
+            placeholder="sk-or-v1-...",
+            help="Your API key stays securely in your local session. Leave empty to run with built-in audit heuristics."
+        )
+        if api_key_input != current_api_key:
+            st.session_state.openrouter_api_key = api_key_input.strip()
+
+    with col_model:
+        model_display_names = {
+            "google/gemini-2.0-flash-001": "⚡ Google Gemini 2.0 Flash (Recommended — Fast & Low Cost)",
+            "anthropic/claude-3.5-sonnet": "🧠 Anthropic Claude 3.5 Sonnet (High Accuracy Vision)",
+            "meta-llama/llama-3.2-11b-vision-instruct": "🦙 Meta Llama 3.2 11B Vision (Open Weights)",
+            "openai/gpt-4o-mini": "🚀 OpenAI GPT-4o Mini (Efficient Multimodal)",
+            "openai/gpt-4o": "👑 OpenAI GPT-4o (Flagship Model)"
+        }
+        
+        selected_model = st.selectbox(
+            "🤖 Vision AI Model",
+            options=SUPPORTED_VISION_MODELS,
+            format_func=lambda m: model_display_names.get(m, m),
+            index=0
+        )
+
+    st.markdown("""
+    <div class="ai-features-strip" style="margin-top: 10px; margin-bottom: 20px;">
+        <span class="ai-feature-tag">🛡️ Strict JSON Schema Validation</span>
+        <span class="ai-feature-tag">📸 Multi-Angle Defect Detection</span>
+        <span class="ai-feature-tag">📑 Victorian Food Act 1984 Alignment</span>
+        <span class="ai-feature-tag">🔒 Zero Data Retention / Private Server</span>
+    </div>
+    """, unsafe_allow_html=True)
 
     # --- Submit Action ---
     st.markdown("<br>", unsafe_allow_html=True)
