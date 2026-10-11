@@ -155,75 +155,30 @@ def render_screen1():
                         "notes": note_input
                     })
 
-    # --- Step 3: AI Configuration Dedicated Card ---
+    # --- Step 3: AI Configuration Summary ---
     st.markdown("""
     <div class="step-header">
         <div class="step-number">3</div>
-        <h3 class="step-title">AI Model & API Configuration</h3>
+        <h3 class="step-title">AI Vision Processing Engine</h3>
     </div>
     """, unsafe_allow_html=True)
 
-    current_api_key = st.session_state.get("openrouter_api_key", os.getenv("OPENROUTER_API_KEY", ""))
-    is_connected = bool(current_api_key and current_api_key.strip())
+    selected_model = st.session_state.get("selected_vision_model", DEFAULT_VISION_MODEL)
+    current_key = st.session_state.get("openrouter_api_key", os.getenv("OPENROUTER_API_KEY", ""))
+    is_live = bool(current_key and current_key.strip())
     
-    status_class = "ai-status-connected" if is_connected else "ai-status-heuristic"
-    status_icon = "🟢" if is_connected else "🟡"
-    status_text = "API Key Active • Live OpenRouter AI" if is_connected else "Offline Mode • Local Heuristic Active"
-
+    status_badge = "🟢 Live OpenRouter Vision AI Active" if is_live else "🟡 Offline Heuristic Active (Configure API Key in Sidebar Menu)"
+    badge_cls = "ai-status-connected" if is_live else "ai-status-heuristic"
+    
     st.markdown(f"""
-    <div class="ai-config-panel">
-        <div class="ai-config-header">
-            <div class="ai-config-title">
-                <span style="font-size: 1.35rem;">⚙️</span>
-                <h3>OpenRouter Vision Engine Settings</h3>
-            </div>
-            <div class="ai-status-pill {status_class}">
-                <span>{status_icon}</span>
-                <span>{status_text}</span>
-            </div>
+    <div style="background: #ffffff; border: 1.5px solid #64748b; border-radius: 12px; padding: 16px 20px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+        <div>
+            <div style="font-weight: 800; color: #0f172a; font-size: 1.05rem;">Active Model: <span style="color: #0284c7;">{selected_model}</span></div>
+            <div style="color: #64748b; font-size: 0.85rem; margin-top: 3px;">Configure your model & API key anytime in the <b>left sidebar menu</b>.</div>
         </div>
-        <p style="color: #64748b; font-size: 0.92rem; margin: 0 0 16px 0;">
-            Configure your OpenRouter API key and select your preferred multimodal vision model. 
-            Inspection photos and notes are processed into structured JSON adhering to FSANZ Food Safety Standards.
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    col_key, col_model = st.columns([1, 1])
-    
-    with col_key:
-        api_key_input = st.text_input(
-            "🔑 OpenRouter API Key",
-            value=current_api_key,
-            type="password",
-            placeholder="sk-or-v1-...",
-            help="Your API key stays securely in your local session. Leave empty to run with built-in audit heuristics."
-        )
-        if api_key_input != current_api_key:
-            st.session_state.openrouter_api_key = api_key_input.strip()
-
-    with col_model:
-        model_display_names = {
-            "google/gemini-2.0-flash-001": "⚡ Google Gemini 2.0 Flash (Recommended — Fast & Low Cost)",
-            "anthropic/claude-3.5-sonnet": "🧠 Anthropic Claude 3.5 Sonnet (High Accuracy Vision)",
-            "meta-llama/llama-3.2-11b-vision-instruct": "🦙 Meta Llama 3.2 11B Vision (Open Weights)",
-            "openai/gpt-4o-mini": "🚀 OpenAI GPT-4o Mini (Efficient Multimodal)",
-            "openai/gpt-4o": "👑 OpenAI GPT-4o (Flagship Model)"
-        }
-        
-        selected_model = st.selectbox(
-            "🤖 Vision AI Model",
-            options=SUPPORTED_VISION_MODELS,
-            format_func=lambda m: model_display_names.get(m, m),
-            index=0
-        )
-
-    st.markdown("""
-    <div class="ai-features-strip" style="margin-top: 10px; margin-bottom: 20px;">
-        <span class="ai-feature-tag">🛡️ Strict JSON Schema Validation</span>
-        <span class="ai-feature-tag">📸 Multi-Angle Defect Detection</span>
-        <span class="ai-feature-tag">📑 Victorian Food Act 1984 Alignment</span>
-        <span class="ai-feature-tag">🔒 Zero Data Retention / Private Server</span>
+        <div class="ai-status-pill {badge_cls}">
+            {status_badge}
+        </div>
     </div>
     """, unsafe_allow_html=True)
 

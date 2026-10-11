@@ -15,12 +15,48 @@ from core.pdf_converter import convert_docx_to_pdf
 from core.audit_rules import AUDIT_STANDARDS
 from database.db import get_audit, get_findings_for_audit, update_audit, log_audit_history
 
+def ensure_report_files(audit, findings):
+    """Ensures that both DOCX and PDF deliverables exist for this audit session."""
+    doc_path = audit.get("docx_path")
+    pdf_path = audit.get("pdf_path")
+    
+    needs_gen = False
+    if not doc_path or not Path(doc_path).exists():
+        needs_gen = True
+    if not pdf_path or not Path(pdf_path).exists():
+        needs_gen = True
+        
+    if needs_gen and findings:
+        clean_site_name = "".join(c for c in audit.get("site_name", "Report") if c.isalnum() or c in (" ", "_")).strip().replace(" ", "_")
+        audit_id_clean = audit.get("audit_id", "AUDIT").replace("-", "_")
+        docx_filename = f"Regis_Audit_Report_{clean_site_name}_{audit_id_clean}.docx"
+        pdf_filename = f"Regis_Audit_Report_{clean_site_name}_{audit_id_clean}.pdf"
+        
+        doc_path = str(OUTPUTS_DIR / docx_filename)
+        pdf_path = str(OUTPUTS_DIR / pdf_filename)
+        
+        try:
+            generate_audit_docx(audit, findings, doc_path)
+            success, final_pdf, err = convert_docx_to_pdf(doc_path, pdf_path)
+            
+            updates = {"docx_path": doc_path}
+            if success and Path(final_pdf).exists():
+                updates["pdf_path"] = final_pdf
+            update_audit(audit["audit_id"], updates, actor="System")
+            audit["docx_path"] = doc_path
+            if success:
+                audit["pdf_path"] = final_pdf
+        except Exception as e:
+            st.error(f"Error generating baseline report files: {e}")
+            
+    return audit
+
 def render_screen3():
     st.markdown("""
     <div class="hero-banner">
-        <div class="hero-badge">Step 3 • Report Verification & Final Export</div>
-        <h1>Report Preview & Compliance Sign-off</h1>
-        <p>Review the populated Regis template tables, execute quality assurance checks, and generate the official PDF & Word audit report.</p>
+        <div class="hero-badge">Step 3 • Report Verification & Direct Downloads</div>
+        <h1>Report Preview & Instant Deliverables</h1>
+        <p>Review the populated Regis template tables, execute quality assurance checks, and download your official PDF and Word audit reports.</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -35,35 +71,109 @@ def render_screen3():
     audit = get_audit(audit_id)
     findings = st.session_state.get("current_findings") or get_findings_for_audit(audit_id)
 
-    # 1. Validation Engine Checklist (FR-09)
+    # Automatically ensure files are ready for instant download
+    audit = ensure_report_files(audit, findings)
+
+    # 1. Prominent Instant Download Card at Top
+    st.markdown("""
+    <div style="background: #ffffff; border: 2px solid #0284c7; border-radius: 14px; padding: 20px 24px; margin-bottom: 24px; box-shadow: 0 4px 14px rgba(2, 132, 199, 0.1);">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
+            <div>
+                <h3 style="margin: 0; font-size: 1.25rem; font-weight: 800; color: #0f172a;">📥 Download Official Deliverables</h3>
+                <span style="color: #64748b; font-size: 0.88rem;">Preserves exact Regis template layout, fonts, compliance tables, and 4-column photo grid.</span>
+            </div>
+            <span class="badge badge-y">Ready for Download</span>
+        </div>
+    """, unsafe_allow_html=True)
+
+    col_dl1, col_dl2, col_regen = st.columns([2, 2, 1.5])
+    
+    doc_path = audit.get("docx_path")
+    pdf_path = audit.get("pdf_path")
+
+    with col_dl1:
+        if pdf_path and Path(pdf_path).exists():
+            with open(pdf_path, "rb") as f_pdf:
+                st.download_button(
+                    label="📄 Download Official PDF Report",
+                    data=f_pdf.read(),
+                    file_name=Path(pdf_path).name,
+                    mime="application/pdf",
+                    use_container_width=True,
+                    type="primary",
+                    key="top_dl_pdf_btn"
+                )
+        else:
+            if st.button("📄 Generate & Download PDF", type="primary", use_container_width=True, key="gen_pdf_btn"):
+                with st.spinner("Converting report to PDF via LibreOffice..."):
+                    clean_site_name = "".join(c for c in audit.get("site_name", "Report") if c.isalnum() or c in (" ", "_")).strip().replace(" ", "_")
+                    docx_fn = str(OUTPUTS_DIR / f"Regis_Audit_Report_{clean_site_name}_{audit_id}.docx")
+                    pdf_fn = str(OUTPUTS_DIR / f"Regis_Audit_Report_{clean_site_name}_{audit_id}.pdf")
+                    generate_audit_docx(audit, findings, docx_fn)
+                    success, final_pdf, err = convert_docx_to_pdf(docx_fn, pdf_fn)
+                    update_audit(audit_id, {"docx_path": docx_fn, "pdf_path": pdf_fn}, actor="Auditor")
+                    st.success("PDF generated! Click again to download.")
+                    st.rerun()
+
+    with col_dl2:
+        if doc_path and Path(doc_path).exists():
+            with open(doc_path, "rb") as f_doc:
+                st.download_button(
+                    label="📝 Download Word Document (.docx)",
+                    data=f_doc.read(),
+                    file_name=Path(doc_path).name,
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    use_container_width=True,
+                    key="top_dl_doc_btn"
+                )
+        else:
+            if st.button("📝 Generate Word Document (.docx)", use_container_width=True, key="gen_doc_btn"):
+                with st.spinner("Building Word document from Regis template..."):
+                    clean_site_name = "".join(c for c in audit.get("site_name", "Report") if c.isalnum() or c in (" ", "_")).strip().replace(" ", "_")
+                    docx_fn = str(OUTPUTS_DIR / f"Regis_Audit_Report_{clean_site_name}_{audit_id}.docx")
+                    generate_audit_docx(audit, findings, docx_fn)
+                    update_audit(audit_id, {"docx_path": docx_fn}, actor="Auditor")
+                    st.success("Word report generated! Click again to download.")
+                    st.rerun()
+
+    with col_regen:
+        if st.button("🔄 Refresh Files", use_container_width=True, help="Regenerates Word and PDF with your latest edits"):
+            with st.spinner("Refreshing deliverables..."):
+                clean_site_name = "".join(c for c in audit.get("site_name", "Report") if c.isalnum() or c in (" ", "_")).strip().replace(" ", "_")
+                docx_fn = str(OUTPUTS_DIR / f"Regis_Audit_Report_{clean_site_name}_{audit_id}.docx")
+                pdf_fn = str(OUTPUTS_DIR / f"Regis_Audit_Report_{clean_site_name}_{audit_id}.pdf")
+                generate_audit_docx(audit, findings, docx_fn)
+                convert_docx_to_pdf(docx_fn, pdf_fn)
+                update_audit(audit_id, {"docx_path": docx_fn, "pdf_path": pdf_fn}, actor="Auditor")
+                st.success("Deliverables updated!")
+                st.rerun()
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    # 2. Validation Engine Checklist (FR-09)
     val_result = validate_audit_report(audit, findings)
     
     if val_result["is_valid"]:
         st.markdown("""
-        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 14px 20px; margin-bottom: 24px; display: flex; align-items: center; gap: 12px;">
+        <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 12px; padding: 14px 20px; margin-bottom: 24px; display: flex; align-items: center; gap: 12px;">
             <div style="font-size: 1.4rem;">✅</div>
             <div>
-                <strong style="color: #15803d; font-size: 1.02rem;">Validation Passed: Report Ready for Issuance</strong>
-                <p style="margin: 2px 0 0 0; color: #475569; font-size: 0.88rem;">All required Regis report metadata, ratings, corrective actions, and evidence photos are fully verified.</p>
+                <strong style="color: #15803d; font-size: 1.02rem;">Validation Passed: Report Meets All Regis Audit Criteria</strong>
+                <p style="margin: 2px 0 0 0; color: #475569; font-size: 0.88rem;">All required facility metadata, ratings, corrective actions, and evidence photos are fully verified.</p>
             </div>
         </div>
         """, unsafe_allow_html=True)
     else:
         st.markdown(f"""
-        <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 14px 20px; margin-bottom: 24px;">
-            <strong style="color: #b91c1c; font-size: 1.02rem;">❌ {val_result['error_count']} Required Field Error(s) Found</strong>
-            <p style="margin: 4px 0 0 0; color: #475569; font-size: 0.88rem;">Please correct the highlighted items before formal approval.</p>
+        <div style="background: #fef2f2; border: 1.5px solid #fca5a5; border-radius: 12px; padding: 14px 20px; margin-bottom: 24px;">
+            <strong style="color: #b91c1c; font-size: 1.02rem;">❌ {val_result['error_count']} Required Field Warning(s)</strong>
+            <p style="margin: 4px 0 0 0; color: #475569; font-size: 0.88rem;">Review the items below. Reports can still be generated and reviewed.</p>
         </div>
         """, unsafe_allow_html=True)
         for err in val_result["errors"]:
             st.markdown(f"• **{err['field']}**: {err['message']}")
 
-    if val_result["warnings"]:
-        with st.expander(f"⚠️ {len(val_result['warnings'])} Advisory Notices", expanded=False):
-            for w in val_result["warnings"]:
-                st.write(f"• {w['message']}")
-
-    # 2. Executive KPI Metrics
+    # 3. Executive KPI Metrics
     total_findings = len(findings)
     c_count = sum(1 for f in findings if f.get("compliance_rating") == "C")
     n_count = sum(1 for f in findings if f.get("compliance_rating") == "N")
@@ -79,7 +189,7 @@ def render_screen3():
 
     st.markdown("<div style='height: 18px;'></div>", unsafe_allow_html=True)
 
-    # 3. Interactive Document Sections Preview
+    # 4. Interactive Document Sections Preview
     st.markdown("### 📋 Document Sections Live Preview")
     
     tab1, tab2, tab3, tab4, tab5 = st.tabs([
@@ -119,7 +229,6 @@ def render_screen3():
 
     with tab3:
         st.write("Summary of items with identified findings & actions:")
-        
         findings_by_row = {}
         for f in findings:
             r_idx = f.get("standard_row_index")
@@ -171,91 +280,20 @@ def render_screen3():
         if conclusion_val != audit.get("audit_conclusion"):
             update_audit(audit_id, {"audit_conclusion": conclusion_val}, actor=audit.get("auditor_name", "Auditor"))
 
-    # 4. Formal Sign-off and Report Generation
+    # 5. Formal Certification & Status Update
     st.markdown("---")
-    st.markdown("### ✍️ Auditor Legal Sign-off & Generation")
+    st.markdown("### ✍️ Formal Audit Sign-off")
     
     decl_check = st.checkbox(
         "I declare that the information stated by me in this report is true and correct to the best of my knowledge and does not contain anything false or misleading.",
         value=audit.get("review_status") == "approved"
     )
 
-    col_btn1, col_btn2 = st.columns([1, 1])
-    
-    with col_btn1:
-        approve_and_generate = st.button(
-            "🚀 Approve & Generate Final Regis Report",
-            type="primary",
-            use_container_width=True,
-            disabled=not (val_result["is_valid"] and decl_check)
-        )
-
-    if approve_and_generate:
-        with st.spinner("Populating Regis Word template and converting to PDF..."):
-            today_str = datetime.now().strftime("%Y%m%d_%H%M%S")
-            clean_site_name = "".join(c for c in audit.get("site_name", "Report") if c.isalnum() or c in (" ", "_")).strip().replace(" ", "_")
-            
-            docx_filename = f"Regis_Audit_Report_{clean_site_name}_{today_str}.docx"
-            pdf_filename = f"Regis_Audit_Report_{clean_site_name}_{today_str}.pdf"
-            
-            docx_path = str(OUTPUTS_DIR / docx_filename)
-            pdf_path = str(OUTPUTS_DIR / pdf_filename)
-
-            # 1. Generate DOCX
-            generate_audit_docx(audit, findings, docx_path)
-            
-            # 2. Convert to PDF
-            success, final_pdf_path, err_msg = convert_docx_to_pdf(docx_path, pdf_path)
-
-            now_iso = datetime.now().isoformat()
-            updates = {
-                "review_status": "approved",
-                "approved_by": audit.get("auditor_name"),
-                "approved_at": now_iso,
-                "docx_path": docx_path
-            }
-            if success:
-                updates["pdf_path"] = final_pdf_path
-                log_audit_history(audit_id, "PDF_GENERATED", audit.get("auditor_name"), f"Generated {pdf_filename}")
-            else:
-                log_audit_history(audit_id, "PDF_GENERATION_FAILED", audit.get("auditor_name"), err_msg)
-                
-            update_audit(audit_id, updates, actor=audit.get("auditor_name"))
-            st.session_state.current_audit_data = get_audit(audit_id)
-            
-            st.success("🎉 Official Regis Audit Report generated and certified!")
-            st.rerun()
-
-    # Download section
-    updated_audit = get_audit(audit_id)
-    doc_path = updated_audit.get("docx_path")
-    pdf_p = updated_audit.get("pdf_path")
-
-    if doc_path and Path(doc_path).exists():
-        st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
-        st.markdown("### 📥 Download Official Audit Deliverables")
-        d_col1, d_col2 = st.columns(2)
-        
-        with d_col1:
-            if pdf_p and Path(pdf_p).exists():
-                with open(pdf_p, "rb") as f_pdf:
-                    st.download_button(
-                        label="📄 Download Official PDF Report",
-                        data=f_pdf.read(),
-                        file_name=Path(pdf_p).name,
-                        mime="application/pdf",
-                        use_container_width=True,
-                        type="primary"
-                    )
-            else:
-                st.warning("PDF version is processing or unavailable.")
-
-        with d_col2:
-            with open(doc_path, "rb") as f_doc:
-                st.download_button(
-                    label="📝 Download Word Document (.docx)",
-                    data=f_doc.read(),
-                    file_name=Path(doc_path).name,
-                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                    use_container_width=True
-                )
+    if st.button("✅ Certify & Mark Report as Approved", type="secondary", use_container_width=True):
+        update_audit(audit_id, {
+            "review_status": "approved",
+            "approved_by": audit.get("auditor_name"),
+            "approved_at": datetime.now().isoformat()
+        }, actor=audit.get("auditor_name"))
+        st.success("🎉 Audit marked as Approved! Re-download or refresh your files above.")
+        st.rerun()

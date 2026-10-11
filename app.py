@@ -31,6 +31,7 @@ from ui.screen1_new_audit import render_screen1
 from ui.screen2_findings import render_screen2
 from ui.screen3_preview import render_screen3
 from ui.screen4_history import render_screen4
+from core.config import SUPPORTED_VISION_MODELS, DEFAULT_VISION_MODEL
 
 # Session state initialization
 if "current_screen" not in st.session_state:
@@ -81,6 +82,44 @@ with st.sidebar:
             st.session_state.photo_notes = {}
             st.session_state.current_screen = "Screen 1 — New Audit"
             st.rerun()
+
+    st.markdown("---")
+    st.markdown("##### ⚙️ AI Engine Configuration")
+    
+    sidebar_api_key = st.text_input(
+        "OpenRouter API Key",
+        value=st.session_state.get("openrouter_api_key", os.getenv("OPENROUTER_API_KEY", "")),
+        type="password",
+        placeholder="sk-or-v1-...",
+        help="Enter OpenRouter key. Stored securely in your session."
+    )
+    if sidebar_api_key:
+        st.session_state.openrouter_api_key = sidebar_api_key.strip()
+        
+    model_labels = {
+        "google/gemini-2.0-flash-001": "⚡ Gemini 2.0 Flash (Fast)",
+        "anthropic/claude-3.5-sonnet": "🧠 Claude 3.5 Sonnet",
+        "meta-llama/llama-3.2-11b-vision-instruct": "🦙 Llama 3.2 Vision",
+        "openai/gpt-4o-mini": "🚀 GPT-4o Mini",
+        "openai/gpt-4o": "👑 GPT-4o"
+    }
+    
+    cur_model = st.session_state.get("selected_vision_model", DEFAULT_VISION_MODEL)
+    cur_idx = SUPPORTED_VISION_MODELS.index(cur_model) if cur_model in SUPPORTED_VISION_MODELS else 0
+    
+    sidebar_model = st.selectbox(
+        "Vision AI Model",
+        SUPPORTED_VISION_MODELS,
+        format_func=lambda m: model_labels.get(m, m),
+        index=cur_idx,
+        key="sidebar_ai_model_selector"
+    )
+    st.session_state.selected_vision_model = sidebar_model
+    
+    if bool(st.session_state.get("openrouter_api_key")):
+        st.markdown('<div class="ai-status-pill ai-status-connected" style="margin-top: 6px;">🟢 Live OpenRouter Active</div>', unsafe_allow_html=True)
+    else:
+        st.markdown('<div class="ai-status-pill ai-status-heuristic" style="margin-top: 6px;">🟡 Offline Heuristic Active</div>', unsafe_allow_html=True)
 
     st.markdown("---")
     st.caption("🔒 Verified Food Safety Standard FSANZ 3.2.1 • 3.2.2 • 3.2.3")
